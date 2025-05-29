@@ -47,7 +47,7 @@ export class VideoController {
     }
     const videoMetadata = await this.videoService.saveVideoMetadata(file, prompt);
 
-    console.log(`Video uploaded: ${file.originalname}, stored at: ${file.path}`);
+    console.log(`Video uploaded: ${file.originalname}, stored at: ${file.path}`); // file.path might be undefined for memory storage
     console.log(`User prompt: ${prompt}`);
 
     return {
@@ -57,7 +57,7 @@ export class VideoController {
         originalFileName: videoMetadata.originalFileName,
         prompt: videoMetadata.userPrompt,
         status: videoMetadata.status,
-        localFilePath: videoMetadata.localFilePath,
+        localFilePath: videoMetadata.localFilePath, // This is included based on the type definition you provided
       },
     };
   }
@@ -105,16 +105,22 @@ export class VideoController {
       res.sendFile(framePath, (err: NodeJS.ErrnoException) => {
         if (err) {
           console.error(`Error serving frame file ${framePath}:`, err);
-          if (err.code === 'ENOENT') {
-            res.status(404).send('Frame file not found on server.');
-          } else {
-            res.status(500).send('Error serving frame file.');
+          // --- FIXED: Check if headers already sent before sending new response ---
+          if (!res.headersSent) {
+            if (err.code === 'ENOENT') {
+              res.status(404).send('Frame file not found on server.');
+            } else {
+              res.status(500).send('Error serving frame file.');
+            }
           }
         }
       });
     } catch (error) {
       console.error('Error in getFrame controller:', error);
-      throw new InternalServerErrorException(error.message || 'An unknown error occurred while serving frame.');
+      // --- FIXED: Check if headers already sent before throwing ---
+      if (!res.headersSent) {
+        throw new InternalServerErrorException(error.message || 'An unknown error occurred while serving frame.');
+      }
     }
   }
 
@@ -134,7 +140,7 @@ export class VideoController {
     if (!userTextInput || userTextInput.trim() === '') {
       // If prompt is missing, and userImage was uploaded, delete it.
       if (userImage) {
-        await fsPromises.unlink(userImage.path).catch(err => console.error('Error deleting user uploaded image:', err));
+        await fsPromises.unlink(userImage.path).catch(err => console.error('Error deleting temp upload file:', err));
       }
       throw new BadRequestException('User text input is mandatory for RunwayML processing.');
     }
@@ -172,7 +178,7 @@ export class VideoController {
       console.error('Error in processFrameWithRunway controller:', error);
       // If error occurred during validation or setup, delete userImage if uploaded
       if (userImage) {
-        await fsPromises.unlink(userImage.path).catch(err => console.error('Error deleting user uploaded image on controller error:', err));
+        await fsPromises.unlink(userImage.path).catch(err => console.error('Error deleting user uploaded image:', err));
       }
       throw new InternalServerErrorException(error.message || 'An unknown error occurred during RunwayML processing initiation.');
     }
@@ -204,16 +210,22 @@ export class VideoController {
       res.sendFile(imagePath, (err: NodeJS.ErrnoException) => {
         if (err) {
           console.error(`Error serving RunwayML output image ${imagePath}:`, err);
-          if (err.code === 'ENOENT') {
-            res.status(404).send('RunwayML output image file not found on server.');
-          } else {
-            res.status(500).send('Error serving RunwayML output image.');
+          // --- FIXED: Check if headers already sent before sending new response ---
+          if (!res.headersSent) {
+            if (err.code === 'ENOENT') {
+              res.status(404).send('RunwayML output image file not found on server.');
+            } else {
+              res.status(500).send('Error serving RunwayML output image.');
+            }
           }
         }
       });
     } catch (error) {
       console.error('Error in getRunwayOutputImage controller:', error);
-      throw new InternalServerErrorException(error.message || 'An unknown error occurred while serving RunwayML output image.');
+      // --- FIXED: Check if headers already sent before throwing ---
+      if (!res.headersSent) {
+        throw new InternalServerErrorException(error.message || 'An unknown error occurred while serving RunwayML output image.');
+      }
     }
   }
 }

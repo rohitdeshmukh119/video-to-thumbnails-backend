@@ -29,7 +29,7 @@ const runwayModelId: string = process.env.RUNWAYML_MODEL_ID || 'gen4_image';
 const runwayWorkspaceId: string = process.env.RUNWAYML_WORKSPACE_ID || 'Creative';
 
 // --- Base URL for serving local frames to RunwayML ---
-const BASE_URL = '  https://afe0-103-182-132-196.ngrok-free.app';
+const BASE_URL = 'https://6698-2401-4900-1c62-9978-841a-c5c9-3cd6-5a4d.ngrok-free.app';
 
 // --- Directory for RunwayML Output Images ---
 const RUNWAY_OUTPUT_DIR = path.join(process.cwd(), 'runway_output_images');
